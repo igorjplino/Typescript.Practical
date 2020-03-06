@@ -1,0 +1,40 @@
+#Build results
+
+[Dd]ebug/
+[Rr]elease/
+x64/
+[bB]in/
+[Oo]bj/
+__MACOSX/
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+# except build/, which is used as an MSBuild target.
+!**/packages/build/
+
+# Visual Studio Code
+.vscode/
+
+# Output folder used by Webpack or other FE stuff
+**/node_modules/*
+#**/wwwroot/*
+
+# Visual Studio 2015/2017 cache/options directory
+.vs/
+
+pids
+logs
+results
+tmp
+
+# Build
+js/
+
+# API keys and secrets
+.env
+
+# OS metadata
+.DS_Store
+Thumbs.db
