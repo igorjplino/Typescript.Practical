@@ -1,5 +1,7 @@
 import { MensagemView, NegociacoesView } from '../views/index';
 import { Negociacoes, Negociacao, NegociacaoParcial } from '../models/index';
+import { NegociacaoService } from '../services/index';
+import { imprime } from '../helpers/index';
 import { domInject, throttle } from '../helpers/decorators/index';
 
 let timer = 0;
@@ -17,11 +19,14 @@ export class NegociacaoController {
     private _negociacoesView = new NegociacoesView("#negociacoesView");
     private _mensagemView = new MensagemView("#mensagemView");
 
+    private _service = new NegociacaoService;
+
     constructor() {
 
         this._negociacoesView.update(this._negociacoes);
     }
 
+    @throttle()
     adiciona() {
 
         let date = new Date(this._inputData.val().replace(/-/g, ","));
@@ -39,34 +44,46 @@ export class NegociacaoController {
 
         this._negociacoes.adiciona(negociacao);
 
+        imprime(negociacao, this._negociacoes);
+
         this._negociacoesView.update(this._negociacoes);
         this._mensagemView.update("Negociação adicionada com sucesso!");
     }
 
     @throttle()
-    importarDados() {
+    async importarDados() {
         
-        function isOk(res: Response){
+        try {
 
-            if (res.ok){
-                return res;
+            function isOk(res: Response){
+
+                if (res.ok){
+                    return res;
+                }
+                else {
+                    throw new Error(res.statusText);
+                }
             }
-            else {
-                throw new Error(res.statusText);
+    
+            const negociacoesParaImportar = await this._service.obterNegociacoes(isOk);
+    
+            const negociacoesJaImportadas = this._negociacoes.paraArray();
+    
+            let paraImportar = negociacoesParaImportar.filter(negociacao =>
+                !negociacoesJaImportadas.some(JaImportada => negociacao.ehIgual(JaImportada)));
+    
+            if (paraImportar.length > 0) {
+    
+                paraImportar.forEach(negociacao => this._negociacoes.adiciona(negociacao));
+    
+                this._negociacoesView.update(this._negociacoes);
+    
+                imprime(this._negociacoes);
             }
         }
-
-        fetch("http://localhost:8080/dados")
-                .then(res => isOk(res))
-                .then(res => res.json())
-                .then((dados: NegociacaoParcial[]) => {
-                    dados
-                        .map(dado => new Negociacao(new Date(), dado.vezes, dado.montante))
-                        .forEach(negociacao => this._negociacoes.adiciona(negociacao));
-
-                    this._negociacoesView.update(this._negociacoes);
-                })
-                .catch(err => console.log(err));
+        catch (err) {
+            this._mensagemView.update(err.message);
+        }
     }
 
     private _ehDiaUtil(date: Date): boolean {
